@@ -1,9 +1,11 @@
 class Mopidy < Formula
+  include Language::Python::Virtualenv
+
   desc "Extensible music server written in Python"
   homepage "https://mopidy.com/"
   url "https://files.pythonhosted.org/packages/cc/41/1f291572997c49fce9eef47cea6d06b7d30e9923cc75a84679767f7fc99e/Mopidy-3.4.2.tar.gz"
   sha256 "ada9ecbfc09eecc8c9e6742a8a4fea1632a134a1ab060527d8aa3d36df0547b6"
-  head "https://github.com/mopidy/mopidy.git"
+  head "https://github.com/mopidy/mopidy.git", branch: "main"
 
   depends_on "python@3.12"
   depends_on "gstreamer"
@@ -24,8 +26,8 @@ class Mopidy < Formula
   end
 
   resource "pykka" do
-    url "https://files.pythonhosted.org/packages/45/e9/ba139b5becd0e4bdf10a816af3fc17f788ac630159ca959d6da44d91a7be/pykka-3.1.1.tar.gz"
-    sha256 "14ce223a55e6d62de6657f9b2b129e6ac785f731eccc5e26059e5254beca3cfb"
+    url "https://files.pythonhosted.org/packages/7d/90/cf6b964a454e8dbc4365f4f438d6e82aae9b6a313fd547f5bac635b74f8b/pykka-4.2.0.tar.gz"
+    sha256 "68d7b923def1b6464bbc214aa56453f00bab31c66b459803ece0c49ee43f22eb"
   end
 
   resource "requests" do
@@ -44,22 +46,8 @@ class Mopidy < Formula
   end
 
   def install
-    python3 = Formula["python@3.12"].opt_bin/"python3.12"
-
-    resources.each do |r|
-      r.stage do
-        system python3, *Language::Python.setup_install_args(libexec, python=python3)
-      end
-    end
-
-    system python3, *Language::Python.setup_install_args(libexec, python=python3)
-
-    xy = Language::Python.major_minor_version python3
-    site_packages = "lib/python#{xy}/site-packages"
-    pth_contents = "import site; site.addsitedir('#{libexec/site_packages}')\n"
-    (prefix/site_packages/"homebrew-mopidy.pth").write pth_contents
-
-    bin.install Dir[libexec/"bin/*"]
+    # For HEAD installs (using pyproject.toml) and regular installs, use virtualenv
+    virtualenv_install_with_resources
   end
 
   service do
@@ -68,7 +56,7 @@ class Mopidy < Formula
   end
 
   test do
-    python3 = Formula["python@3.12"].opt_bin/"python3.12"
-    system python3, "-c", "import mopidy"
+    # Use the virtualenv Python to ensure mopidy is found
+    system libexec/"bin/python", "-c", "import mopidy"
   end
 end
